@@ -3,7 +3,7 @@ summative-linda_david_caleb created by GitHub Classroom
 
 Project Description
 
-Our project will be focused on the A* pathfinding algorithm. Our objective is to guide the snake towards the target(our food) by avoiding the walls(this will be represented by black dots). The snake will increase in length and gain one point after each successful reach.
+Our project will be focused on the A* pathfinding algorithm. Our objective is to guide the snake towards the target(our food) by avoiding the walls(this will be represented by the brown blocks). The snake will increase in length and gain one point after each successful reach.
 To determine our path from node to node, looking for a specific node as our end goal, we will be using 2 algorithms: The Breadth First Search and Best First Search
 
 Breadth First Search
