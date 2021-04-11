@@ -33,7 +33,7 @@ Applications
  
  First Prototype
  
- ![](images/prototype.png)
+ ![](images/Screenshot%20(114).png)
 
 Bibliography
 
