@@ -1,245 +1,333 @@
+
 import pygame
 import math
-from queue import PriorityQueue
 
-WIDTH = 800
-WIN = pygame.display.set_mode((WIDTH, WIDTH))
-pygame.display.set_caption("Path Finding Algorithm")
+pygame.init()
 
-RED = (255, 255, 255)
-GREEN = (255, 255, 255)
-BLUE = (0, 255, 0)
-YELLOW = (255, 255, 0)
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-PURPLE = (128, 0, 128)
-ORANGE = (255, 165 ,0)
-GREY = (128, 128, 128)
-TURQUOISE = (64, 224, 208)
+# This version now deems the player as a Target, where the follower will
+# locate the quickest path to, taking into account the walls placed by the user.
 
-class Spot:
-	def __init__(self, row, col, width, total_rows):
-		self.row = row
-		self.col = col
-		self.x = row * width
-		self.y = col * width
-		self.color = WHITE
-		self.neighbors = []
-		self.width = width
-		self.total_rows = total_rows
-
-	def get_pos(self):
-		return self.row, self.col
-
-	def is_closed(self):
-		return self.color == RED
-
-	def is_open(self):
-		return self.color == GREEN
-
-	def is_barrier(self):
-		return self.color == BLACK
-
-	def is_start(self):
-		return self.color == ORANGE
-
-	def is_end(self):
-		return self.color == TURQUOISE
-
-	def reset(self):
-		self.color = WHITE
-
-	def make_start(self):
-		self.color = ORANGE
-
-	def make_closed(self):
-		self.color = RED
-
-	def make_open(self):
-		self.color = GREEN
-
-	def make_barrier(self):
-		self.color = BLACK
-
-	def make_end(self):
-		self.color = TURQUOISE
-
-	def make_path(self):
-		self.color = PURPLE
-
-	def draw(self, win):
-		pygame.draw.rect(win, self.color, (self.x, self.y, self.width, self.width))
-
-	def update_neighbors(self, grid):
-		self.neighbors = []
-		if self.row < self.total_rows - 1 and not grid[self.row + 1][self.col].is_barrier(): # DOWN
-			self.neighbors.append(grid[self.row + 1][self.col])
-
-		if self.row > 0 and not grid[self.row - 1][self.col].is_barrier(): # UP
-			self.neighbors.append(grid[self.row - 1][self.col])
-
-		if self.col < self.total_rows - 1 and not grid[self.row][self.col + 1].is_barrier(): # RIGHT
-			self.neighbors.append(grid[self.row][self.col + 1])
-
-		if self.col > 0 and not grid[self.row][self.col - 1].is_barrier(): # LEFT
-			self.neighbors.append(grid[self.row][self.col - 1])
-
-	def __lt__(self, other):
-		return False
+# Static Variables
+# using a different screen size (divisible by 32)
+SCREEN_SIZE = (480, 640)
+BACKGROUND_COLOR = (255, 255, 255)
+RED = (255, 0, 0)
+GRID_MULT = 16
 
 
-def h(p1, p2):
-	x1, y1 = p1
-	x2, y2 = p2
-	return abs(x1 - x2) + abs(y1 - y2)
+class Player(object):
+    # initialized the object (creates the square at the location and size)
+    def __init__(self):
+        # Rect(x, y, sizeX, sizeY)
+        self.rect = pygame.rect.Rect((232, 50, 16, 16))
+
+    # Uses pygame's key listener to execute command if a certain key is pressed
+    def handle_keys(self):
+        key = pygame.key.get_pressed()
+
+        # These variable help with collision detection
+        x = 0
+        y = 0
+
+        # Movement constrained to XY axis for ease of collision handling
+        if key[pygame.K_a]:
+            self.rect.move_ip(-2, 0)
+            y = 0
+            x = -2
+        elif key[pygame.K_d]:
+            self.rect.move_ip(2, 0)
+            y = 0
+            x = 2
+        elif key[pygame.K_w]:
+            self.rect.move_ip(0, -2)
+            x = 0
+            y = -2
+        elif key[pygame.K_s]:
+            self.rect.move_ip(0, 2)
+            x = 0
+            y = 2
+        elif key[pygame.K_z]:
+            follower.get_node_area()
+        elif key[pygame.K_f]:
+            follower.get_location()
+
+        # If pygame detects a collision with any wall variable,
+        # then set the corresponding sides the the right place.
+        for wall in walls:
+            if self.rect.colliderect(wall.rect):
+                if x == -2:
+                    self.rect.left = wall.rect.right
+                elif x == 2:
+                    self.rect.right = wall.rect.left
+                elif y == -2:
+                    self.rect.top = wall.rect.bottom
+                elif y == 2:
+                    self.rect.bottom = wall.rect.top
+
+    # This will be useful when implementing AI of the other object
+    def getLocation(self):
+        # When you press 'l' (see handle_keys), will print the location.
+        center = self.rect.center
+        return center
+
+    # Initial drawing of the object to the screen
+    def draw(self, surface):
+        # Has to deal with the color of the squares
+        pygame.draw.rect(screen, (0, 0, 128), self.rect)
 
 
-def reconstruct_path(came_from, current, draw):
-	while current in came_from:
-		current = came_from[current]
-		current.make_path()
-		draw()
+class Follower(object):
+    # Same as the character object, but a different location
+    def __init__(self):
+        self.rect = pygame.rect.Rect(232, 580, 16, 16)
+        self.move_here = Node(self.rect.center, False)
+        self.path = []
+        self.closed = []
+
+    # In later programs, this is where I will add some AI related functions
+    def artificial_intelligence(self):
+
+        # Stores the location of the player
+        player_location = player.getLocation()
+        # Splits the location into its X and Y coordinates
+        playerX = player_location[0]
+        playerY = player_location[1]
+
+        # Grab the location of the follower and
+        # splits it into x and y coordinates
+        # Separate the location into its X & Y coordinates
+        location = self.rect.center
+        locX = location[0]
+        locY = location[1]
+
+        # Create an area in which nodes will be implemented
+        self.node_area_x = (locX - 24, locX + 24)
+        self.node_area_y = (locY - 24, locY + 24)
+
+        # If pygame detects a collision with any wall variable,
+        # then set the corresponding sides the the right place.
+        for wall in walls:
+            if self.rect.colliderect(wall.rect):
+                self.rect.move_ip(0, 0)
+
+        # Checks for the closest node to the player
+        # checks if tht node is activated
+        # Makes sure that node isn't a wall
+        low = 99999
+
+        for x in range(len(nodes)):
+            for j in range(len(nodes)):
+                h = int(nodes[x].get_heuristic())
+                if nodes[x].activated:
+                    if not nodes[x].wall:
+                        if h < low:
+                            low = h
+                            self.move_here = nodes[x]
+                        if h == low:
+                            self.move_here = nodes[j]
+                            nodes[x].activated = False
+
+        self.rect.move_ip((self.move_here.X - self.rect.x) / 16, (self.move_here.Y - self.rect.y) / 16)
+
+    # Initial drawing of the object to the screen
+    def draw(self, surface):
+        # Has to deal with the color of the squares
+        pygame.draw.rect(screen, (200, 0, 0), self.rect)
+
+    def get_node_area(self):
+        print("The node area X is {}\nThe node area Y is {}").format(self.node_area_x, self.node_area_y)
+
+    def which_nodes(self):
+        # For each node, check if it is in the area
+        # if it is, set activated
+        for node in nodes:
+            if node.X >= self.node_area_x[0] and node.X <= self.node_area_x[1]:
+                if node.Y >= self.node_area_y[0] and node.Y <= self.node_area_y[1]:
+                    node.activated = True
+                else:
+                    node.activated = False
+            else:
+                node.activated = False
+
+    # For debugging, had trouble getting it to move to the desired node
+    def get_location(self):
+        fol_loc = self.rect.center
+        print("Follower Location: {}").format(fol_loc)
 
 
-def algorithm(draw, grid, start, end):
-	count = 0
-	open_set = PriorityQueue()
-	open_set.put((0, count, start))
-	came_from = {}
-	g_score = {spot: float("inf") for row in grid for spot in row}
-	g_score[start] = 0
-	f_score = {spot: float("inf") for row in grid for spot in row}
-	f_score[start] = h(start.get_pos(), end.get_pos())
+class Wall(object):
+    # Initialize the wall, user can draw walls that no-one can move through
+    def __init__(self):
+        # Gets mouse position (returns as a tuple)
+        self.location = pygame.mouse.get_pos()
+        # Stores information from the tuples into a usable form
+        locX = self.location[0]
+        locY = self.location[1]
+        walls.append(self)
 
-	open_set_hash = {start}
+        # Takes wall rotation into account. If you want to rotate a placed wall,
+        # hold 'r' when you click
+        rotation = False
+        self.rotation = rotation
+        held_key = pygame.key.get_pressed()
+        if held_key[pygame.K_r]:
+            self.rotation = not rotation
 
-	while not open_set.empty():
-		for event in pygame.event.get():
-			if event.type == pygame.QUIT:
-				pygame.quit()
+        if self.rotation == False:
+            self.rect = pygame.rect.Rect(locX - 25, locY, 50, 10)
+            node = Node((locX - 50, locY + 5), True)
+            node = Node((locX, locY + 5), True)
+            node = Node((locX + 50, locY + 5), True)
+        else:
+            self.rect = pygame.rect.Rect(locX, locY - 25, 10, 50)
+            node = Node((locX - 5, locY - 50), True)
+            node = Node((locX - 5, locY), True)
+            node = Node((locX - 5, locY + 50), True)
 
-		current = open_set.get()[2]
-		open_set_hash.remove(current)
-
-		if current == end:
-			reconstruct_path(came_from, end, draw)
-			end.make_end()
-			return True
-
-		for neighbor in current.neighbors:
-			temp_g_score = g_score[current] + 1
-
-			if temp_g_score < g_score[neighbor]:
-				came_from[neighbor] = current
-				g_score[neighbor] = temp_g_score
-				f_score[neighbor] = temp_g_score + h(neighbor.get_pos(), end.get_pos())
-				if neighbor not in open_set_hash:
-					count += 1
-					open_set.put((f_score[neighbor], count, neighbor))
-					open_set_hash.add(neighbor)
-					neighbor.make_open()
-
-		draw()
-
-		if current != start:
-			current.make_closed()
-
-	return False
+    def draw(self, surface):
+        pygame.draw.rect(screen, (100, 100, 100), self.rect)
 
 
-def make_grid(rows, width):
-	grid = []
-	gap = width // rows
-	for i in range(rows):
-		grid.append([])
-		for j in range(rows):
-			spot = Spot(i, j, gap, rows)
-			grid[i].append(spot)
+# This will draw the nodes in a grid, and store them into a list
+class Node(object):
+    def __init__(self, location, wall):
+        self.location = location
+        self.X = self.location[0]
+        self.Y = self.location[1]
+        self.rect = pygame.rect.Rect(self.X, self.Y, 5, 5)
 
-	return grid
+        # if the node has been visited
+        self.activated = False
+        if wall:
+            self.wall = True
+        else:
+            self.wall = False
+
+        # Add to the nodes list
+        nodes.append(self)
+
+    # Do not use unless you want to bog down the program
+    def draw(self, surface):
+        for node in nodes:
+            pygame.draw.circle(screen, (0, 200, 0), (self.location), 5)
+
+    def get_heuristic(self):
+        # Stores the location of the player
+        # useful for the straight line heuristic
+        player_location = player.getLocation()
+        # Splits the location into its X and Y coordinates
+        playerX = player_location[0]
+        playerY = player_location[1]
+
+        # heuristic or straight line distance to the player
+        self.H = math.hypot(playerX - self.X, playerY - self.Y)
+        # Used for debug/testing
+        # print("Heuristic Distance: {}").format(self.H)
+        return self.H
+
+    def is_wall(self):
+
+        self.check_area_x = (self.X - 16, self.X + 16)
+        self.check_area_y = (self.Y - 16, self.Y + 16)
+
+        # For each wall, we want to check if node is in the walls area,
+        # if it is, activate it so that we can see it, but
+        # mark it as a wall, so we know to avoid it.
+        for wall in walls:
+            # Getting location and size of wall
+            wall_size = wall.rect.size
+            wall_location = wall.location
+            # These point to the middle
+            wallX = wall_location[0]
+            wallY = wall_location[1]
+
+            if self.activated:
+                if wallX >= self.check_area_x[0] and wallX <= self.check_area_x[1]:
+                    if wallY >= self.check_area_y[0] and wallY <= self.check_area_y[1]:
+                        self.wall = True
+                if self.rect.colliderect(wall):
+                    self.wall = True
+
+            # print("Wall coordinates: {}, {}").format(wallX, wallY)
+            # print("The wall is size: {}\nThe wall is located at: {}").format(wall_size, wall_location)
 
 
-def draw_grid(win, rows, width):
-	gap = width // rows
-	for i in range(rows):
-		pygame.draw.line(win, GREY, (0, i * gap), (width, i * gap))
-		for j in range(rows):
-			pygame.draw.line(win, GREY, (j * gap, 0), (j * gap, width))
+# The grid will be beneficial for pathfinding
+class Grid(object):
+    def __init__(self):
+        self.screen = SCREEN_SIZE
+        self.screenX = self.screen[0]
+        self.screenY = self.screen[1]
+
+    def place_nodes(self):
+        for y in range(self.screenY // GRID_MULT):
+            for x in range(self.screenX // GRID_MULT):
+                # print("Placeing node at ({}, {})").format(x*10, y*10)
+                location = (x * GRID_MULT, y * GRID_MULT)
+                node = Node(location, False)
 
 
-def draw(win, grid, rows, width):
-	win.fill(WHITE)
+# Game Loop Variables
+# Creates a display screen at the static size created above
+screen = pygame.display.set_mode(SCREEN_SIZE)
 
-	for row in grid:
-		for spot in row:
-			spot.draw(win)
+# Sets the title of the screen
+pygame.display.set_caption("Complex AI")
 
-	draw_grid(win, rows, width)
-	pygame.display.update()
+# creates the objects and the control switch of the game loop
+player = Player()
+grid = Grid()
+nodes = []
+grid.place_nodes()
+follower = Follower()
 
+walls = []
+running = True
 
-def get_clicked_pos(pos, rows, width):
-	gap = width // rows
-	y, x = pos
+clock = pygame.time.Clock()
 
-	row = y // gap
-	col = x // gap
+# print("Total number of nodes is {}").format(len(nodes))
+print("To start follower AI, hold down 'Q'")
 
-	return row, col
+# Game Loop
+while running:
+    # Gives the screen the static color listed (R, G, B)
+    screen.fill(BACKGROUND_COLOR)
 
-# IN INIT
-def main(win, width):
-	ROWS = 50
-	grid = make_grid(ROWS, width)
+    # Get events. Pygame has certain events that it can detect, in this case
+    # the event is the QUIT event (when you close the program)
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+            pygame.quit()
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            Wall()
 
-	start = None
-	end = None
+    # Draw the player to the screen and detect keystrokes
+    player.draw(screen)
+    player.handle_keys()
 
-	run = True
-	while run:
-		draw(win, grid, ROWS, width)
-		for event in pygame.event.get():
-			if event.type == pygame.QUIT:
-				run = False
+    # draw the follower to the screen and activate logic
+    follower.draw(screen)
 
-			if pygame.mouse.get_pressed()[0]: # LEFT
-				pos = pygame.mouse.get_pos()
-				row, col = get_clicked_pos(pos, ROWS, width)
-				spot = grid[row][col]
-				if not start and spot != end:
-					start = spot
-					start.make_start()
+    key = pygame.key.get_pressed()
+    if key[pygame.K_q]:
+        follower.artificial_intelligence()
 
-				elif not end and spot != start:
-					end = spot
-					end.make_end()
+        # check which nodes are active
+        follower.which_nodes()
 
-				elif spot != end and spot != start:
-					spot.make_barrier()
+        for node in nodes:
+            if node.activated:
+                node.is_wall()
+                # node.draw(screen)
+                node.get_heuristic()
 
-			elif pygame.mouse.get_pressed()[2]: # RIGHT
-				pos = pygame.mouse.get_pos()
-				row, col = get_clicked_pos(pos, ROWS, width)
-				spot = grid[row][col]
-				spot.reset()
-				if spot == start:
-					start = None
-				elif spot == end:
-					end = None
+    # draw the wall
+    for wall in walls:
+        wall.draw(screen)
 
-			if event.type == pygame.KEYDOWN:
-				if event.key == pygame.K_SPACE and start and end:
-					for row in grid:
-						for spot in row:
-							spot.update_neighbors(grid)
+    # flip, or update the display
+    pygame.display.update()
 
-					algorithm(lambda: draw(win, grid, ROWS, width), grid, start, end)
-
-				if event.key == pygame.K_c:
-					start = None
-					end = None
-					grid = make_grid(ROWS, width)
-
-	pygame.quit()
-
-main(WIN, WIDTH)
+    clock.tick(70)
