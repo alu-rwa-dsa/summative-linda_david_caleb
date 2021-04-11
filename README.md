@@ -29,6 +29,11 @@ As we move deeper into the digital age, there is a need to automate most tasks t
 Applications
 
  This general problem of finding a path from a starting point to an endpoint can be applied to lots of other applications like satellite navigation, routing packets across the internet, game AIs, OS file system search, distribution/utility networks and many more.
+ 
+ 
+ First Prototype
+ 
+ ![](images/prototype.png)
 
 Bibliography
 
