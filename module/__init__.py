@@ -1,333 +1,527 @@
-
+from snake_game_GUI import SnakeGameGUI
 import pygame
-import math
+import time
+import random
+import numpy as np
 
-pygame.init()
-
-# This version now deems the player as a Target, where the follower will
-# locate the quickest path to, taking into account the walls placed by the user.
-
-# Static Variables
-# using a different screen size (divisible by 32)
-SCREEN_SIZE = (480, 640)
-BACKGROUND_COLOR = (255, 255, 255)
-RED = (255, 0, 0)
-GRID_MULT = 16
+rand = random.Random()
 
 
-class Player(object):
-    # initialized the object (creates the square at the location and size)
-    def __init__(self):
-        # Rect(x, y, sizeX, sizeY)
-        self.rect = pygame.rect.Rect((232, 50, 16, 16))
+class SnakeGameAI(SnakeGameGUI):
+    def __init__(self, headless_mode=False):
+        super().__init__(headless_mode)
+        self.reverse = 1  # flag to allow snake to alternate directions
 
-    # Uses pygame's key listener to execute command if a certain key is pressed
-    def handle_keys(self):
-        key = pygame.key.get_pressed()
+    def rand_move(self):
+        return rand.choice([[-1, 0], [1, 0], [0, -1], [0, 1]])
 
-        # These variable help with collision detection
-        x = 0
-        y = 0
+    def get_safe_moves(self, temp_head=None):
+        moves = [[-1, 0], [1, 0], [0, -1], [0, 1]]
+        unsafe_moves = []
 
-        # Movement constrained to XY axis for ease of collision handling
-        if key[pygame.K_a]:
-            self.rect.move_ip(-2, 0)
-            y = 0
-            x = -2
-        elif key[pygame.K_d]:
-            self.rect.move_ip(2, 0)
-            y = 0
-            x = 2
-        elif key[pygame.K_w]:
-            self.rect.move_ip(0, -2)
-            x = 0
-            y = -2
-        elif key[pygame.K_s]:
-            self.rect.move_ip(0, 2)
-            x = 0
-            y = 2
-        elif key[pygame.K_z]:
-            follower.get_node_area()
-        elif key[pygame.K_f]:
-            follower.get_location()
+        if temp_head == None:
+            temp_head_orig = self.head.copy()
+        else:
+            temp_head_orig = temp_head.copy()
+        # remove unsafe moves
+        for move in moves:
+            temp_head = temp_head_orig.copy()
+            temp_head[0] += move[0]
+            temp_head[1] += move[1]
 
-        # If pygame detects a collision with any wall variable,
-        # then set the corresponding sides the the right place.
-        for wall in walls:
-            if self.rect.colliderect(wall.rect):
-                if x == -2:
-                    self.rect.left = wall.rect.right
-                elif x == 2:
-                    self.rect.right = wall.rect.left
-                elif y == -2:
-                    self.rect.top = wall.rect.bottom
-                elif y == 2:
-                    self.rect.bottom = wall.rect.top
+            if temp_head[0] < 0 or temp_head[0] >= self.height:
+                unsafe_moves.append(move)
+            elif temp_head[1] < 0 or temp_head[1] >= self.width:
+                unsafe_moves.append(move)
+            elif temp_head in self.snake:
+                unsafe_moves.append(move)
 
-    # This will be useful when implementing AI of the other object
-    def getLocation(self):
-        # When you press 'l' (see handle_keys), will print the location.
-        center = self.rect.center
-        return center
+        for move in unsafe_moves:
+            moves.remove(move)
 
-    # Initial drawing of the object to the screen
-    def draw(self, surface):
-        # Has to deal with the color of the squares
-        pygame.draw.rect(screen, (0, 0, 128), self.rect)
+        return moves
+
+    def safe_move(self):
+        moves = self.get_safe_moves()
+        if len(moves) == 0:  # no safe moves
+            moves = [[-1, 0], [1, 0], [0, -1], [0, 1]]
+        return rand.choice(moves)
+
+    def move2food(self):
+        moves = [[-1, 0], [1, 0], [0, -1], [0, 1]]
+        unsafe_moves = []
+        food_dir = []
+
+        d0 = self.food[0] - self.head[0]
+        if d0 != 0:
+            food_dir.append([d0 // abs(d0), 0])
+        d1 = self.food[1] - self.head[1]
+        if d1 != 0:
+            food_dir.append([0, d1 // abs(d1)])
+
+        # remove unsafe moves
+        for move in moves:
+            temp_head = self.head.copy()
+            temp_head[0] += move[0]
+            temp_head[1] += move[1]
+
+            if temp_head[0] < 0 or temp_head[0] >= self.height:
+                unsafe_moves.append(move)
+            elif temp_head[1] < 0 or temp_head[1] >= self.width:
+                unsafe_moves.append(move)
+            elif temp_head in self.snake:
+                unsafe_moves.append(move)
+
+        for move in unsafe_moves:
+            moves.remove(move)
+
+        # move towards food first
+        for move in moves:
+            if move in food_dir:
+                return move
+
+        if len(moves) == 0:  # no safe moves
+            return [1, 0]
+        else:
+            return rand.choice(moves)
+
+    def wiggle2food(self):
+        moves = [[-1, 0], [1, 0], [0, -1], [0, 1]]
+        unsafe_moves = []
+        food_dir = []
+
+        d0 = self.food[0] - self.head[0]
+        if d0 != 0:
+            food_dir.append([d0 // abs(d0), 0])
+        d1 = self.food[1] - self.head[1]
+        if d1 != 0:
+            food_dir.append([0, d1 // abs(d1)])
+
+        # remove unsafe moves
+        for move in moves:
+            temp_head = self.head.copy()
+            temp_head[0] += move[0]
+            temp_head[1] += move[1]
+
+            if temp_head[0] < 0 or temp_head[0] >= self.height:
+                unsafe_moves.append(move)
+            elif temp_head[1] < 0 or temp_head[1] >= self.width:
+                unsafe_moves.append(move)
+            elif temp_head in self.snake:
+                unsafe_moves.append(move)
+
+        for move in unsafe_moves:
+            moves.remove(move)
+
+        # move towards food first
+        self.reverse *= -1  # to alternate turning direction
+        for move in moves[:: self.reverse]:
+            # for move in moves:
+            if move in food_dir:
+                return move
+
+        if len(moves) == 0:  # no safe moves
+            return [1, 0]
+        else:
+            return rand.choice(moves)
+
+    def run_game(self, player_ai=None):
+        update_rate = 1
+        fps = 60
+        counter = 0
+        vel = self.vel
+        pygame.init()
+        myfont = pygame.font.SysFont("monospace", 65)
+        self.draw_board()
+        pygame.display.update()
+
+        exit_flag = False
+        while exit_flag == False and self.game_state == True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    exit_flag = True
+
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_UP:
+                        vel = [-1, 0]
+                    elif event.key == pygame.K_DOWN:
+                        vel = [1, 0]
+                    elif event.key == pygame.K_LEFT:
+                        vel = [0, -1]
+                    elif event.key == pygame.K_RIGHT:
+                        vel = [0, 1]
+                    else:
+                        vel = self.vel
+
+            time.sleep(1.0 / fps)
+            counter += 1
+            if counter >= update_rate:
+                if player_ai != None:
+                    vel = player_ai()
+                self.update_vel(vel)
+                self.update_state()
+                counter = 0
+            self.draw_board()
+            pygame.display.update()
+
+        label = myfont.render(f"Game Over!", 1, self.RED)
+        self.SCREEN.blit(label, (self.WIDTH + 10, 50))
+        pygame.display.update()
+
+        while exit_flag == False:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    exit_flag = True
+        pygame.quit()
 
 
-class Follower(object):
-    # Same as the character object, but a different location
-    def __init__(self):
-        self.rect = pygame.rect.Rect(232, 580, 16, 16)
-        self.move_here = Node(self.rect.center, False)
-        self.path = []
-        self.closed = []
+class SnakeGameAStar(SnakeGameAI):
+    def __init__(self, headless_mode=False):
+        super().__init__(headless_mode)
+        self.path2food = []
 
-    # In later programs, this is where I will add some AI related functions
-    def artificial_intelligence(self):
+    def move2food(self):
+        moves = [[-1, 0], [1, 0], [0, -1], [0, 1]]
+        unsafe_moves = []
+        food_dir = []
 
-        # Stores the location of the player
-        player_location = player.getLocation()
-        # Splits the location into its X and Y coordinates
-        playerX = player_location[0]
-        playerY = player_location[1]
+        d0 = self.food[0] - self.head[0]
+        if d0 != 0:
+            food_dir.append([d0 // abs(d0), 0])
+        d1 = self.food[1] - self.head[1]
+        if d1 != 0:
+            food_dir.append([0, d1 // abs(d1)])
 
-        # Grab the location of the follower and
-        # splits it into x and y coordinates
-        # Separate the location into its X & Y coordinates
-        location = self.rect.center
-        locX = location[0]
-        locY = location[1]
+        # remove unsafe moves
+        for move in moves:
+            temp_head = self.head.copy()
+            temp_head[0] += move[0]
+            temp_head[1] += move[1]
 
-        # Create an area in which nodes will be implemented
-        self.node_area_x = (locX - 24, locX + 24)
-        self.node_area_y = (locY - 24, locY + 24)
+            if temp_head[0] < 0 or temp_head[0] >= self.height:
+                unsafe_moves.append(move)
+            elif temp_head[1] < 0 or temp_head[1] >= self.width:
+                unsafe_moves.append(move)
+            elif temp_head in self.snake:
+                unsafe_moves.append(move)
 
-        # If pygame detects a collision with any wall variable,
-        # then set the corresponding sides the the right place.
-        for wall in walls:
-            if self.rect.colliderect(wall.rect):
-                self.rect.move_ip(0, 0)
+        for move in unsafe_moves:
+            moves.remove(move)
 
-        # Checks for the closest node to the player
-        # checks if tht node is activated
-        # Makes sure that node isn't a wall
-        low = 99999
+        # move towards food first
+        for move in moves:
+            if move in food_dir:
+                return move
 
-        for x in range(len(nodes)):
-            for j in range(len(nodes)):
-                h = int(nodes[x].get_heuristic())
-                if nodes[x].activated:
-                    if not nodes[x].wall:
-                        if h < low:
-                            low = h
-                            self.move_here = nodes[x]
-                        if h == low:
-                            self.move_here = nodes[j]
-                            nodes[x].activated = False
+        if len(moves) == 0:  # no safe moves
+            return [1, 0]
+        else:
+            return rand.choice(moves)
 
-        self.rect.move_ip((self.move_here.X - self.rect.x) / 16, (self.move_here.Y - self.rect.y) / 16)
+    def wiggle2food(self):
+        moves = [[-1, 0], [1, 0], [0, -1], [0, 1]]
+        unsafe_moves = []
+        food_dir = []
 
-    # Initial drawing of the object to the screen
-    def draw(self, surface):
-        # Has to deal with the color of the squares
-        pygame.draw.rect(screen, (200, 0, 0), self.rect)
+        d0 = self.food[0] - self.head[0]
+        if d0 != 0:
+            food_dir.append([d0 // abs(d0), 0])
+        d1 = self.food[1] - self.head[1]
+        if d1 != 0:
+            food_dir.append([0, d1 // abs(d1)])
 
-    def get_node_area(self):
-        print("The node area X is {}\nThe node area Y is {}").format(self.node_area_x, self.node_area_y)
+        # remove unsafe moves
+        for move in moves:
+            temp_head = self.head.copy()
+            temp_head[0] += move[0]
+            temp_head[1] += move[1]
 
-    def which_nodes(self):
-        # For each node, check if it is in the area
-        # if it is, set activated
-        for node in nodes:
-            if node.X >= self.node_area_x[0] and node.X <= self.node_area_x[1]:
-                if node.Y >= self.node_area_y[0] and node.Y <= self.node_area_y[1]:
-                    node.activated = True
-                else:
-                    node.activated = False
+            if temp_head[0] < 0 or temp_head[0] >= self.height:
+                unsafe_moves.append(move)
+            elif temp_head[1] < 0 or temp_head[1] >= self.width:
+                unsafe_moves.append(move)
+            elif temp_head in self.snake:
+                unsafe_moves.append(move)
+
+        for move in unsafe_moves:
+            moves.remove(move)
+
+        # move towards food first
+        self.reverse *= -1  # to alternate turning direction
+        for move in moves[:: self.reverse]:
+            # for move in moves:
+            if move in food_dir:
+                return move
+
+        if len(moves) == 0:  # no safe moves
+            return [1, 0]
+        else:
+            return rand.choice(moves)
+
+    def wiggle_away(self):
+        moves = [[-1, 0], [1, 0], [0, -1], [0, 1]]
+        unsafe_moves = []
+        food_dir = []
+
+        d0 = -self.food[0] + self.head[0]
+        if d0 != 0:
+            food_dir.append([d0 // abs(d0), 0])
+        d1 = -self.food[1] + self.head[1]
+        if d1 != 0:
+            food_dir.append([0, d1 // abs(d1)])
+
+        # remove unsafe moves
+        for move in moves:
+            temp_head = self.head.copy()
+            temp_head[0] += move[0]
+            temp_head[1] += move[1]
+
+            if temp_head[0] < 0 or temp_head[0] >= self.height:
+                unsafe_moves.append(move)
+            elif temp_head[1] < 0 or temp_head[1] >= self.width:
+                unsafe_moves.append(move)
+            elif temp_head in self.snake:
+                unsafe_moves.append(move)
+
+        for move in unsafe_moves:
+            moves.remove(move)
+
+        # move towards food first
+        self.reverse *= -1  # to alternate turning direction
+        for move in moves[:: self.reverse]:
+            # for move in moves:
+            if move in food_dir:
+                return move
+
+        if len(moves) == 0:  # no safe moves
+            return [1, 0]
+        else:
+            return rand.choice(moves)
+
+    def bf_explore(self, temp_head):
+        self.explored.append(temp_head)
+
+        moves = self.get_safe_moves(temp_head)
+
+        for move in moves:
+            head = temp_head.copy()
+            head[0] += move[0]
+            head[1] += move[1]
+            if head in self.explored:
+                continue
+
+            self.parents[str(head)] = temp_head
+            if self.check4food(head):
+                self.food_found = True
+                return
+            elif head not in self.explored:
+                if head not in self.not_explored:
+                    self.not_explored.insert(0, head)
+
+    def bf_search(self, temp_head=None):
+        self.food_found = False
+        self.not_explored = []
+        self.explored = []
+        self.parents = dict()
+        if temp_head == None:
+            temp_head = self.head.copy()
+        orig_head = temp_head.copy()
+
+        moves = self.get_safe_moves(temp_head)
+
+        for move in moves:
+            head = temp_head.copy()
+            head[0] += move[0]
+            head[1] += move[1]
+            if self.check4food(head):
+                return move
             else:
-                node.activated = False
+                self.not_explored.insert(0, head)
+                self.parents[str(head)] = temp_head
 
-    # For debugging, had trouble getting it to move to the desired node
-    def get_location(self):
-        fol_loc = self.rect.center
-        print("Follower Location: {}").format(fol_loc)
+        while len(self.not_explored) > 0:
+            temp_head = self.not_explored.pop()
+            self.bf_explore(temp_head)
+            if self.food_found:
+                break
 
+        if self.food_found:  # back track to move
+            loc = self.food
+            while self.parents[str(loc)] != orig_head:
+                loc = self.parents[str(loc)]
+            return [loc[0] - orig_head[0], loc[1] - orig_head[1]]
 
-class Wall(object):
-    # Initialize the wall, user can draw walls that no-one can move through
-    def __init__(self):
-        # Gets mouse position (returns as a tuple)
-        self.location = pygame.mouse.get_pos()
-        # Stores information from the tuples into a usable form
-        locX = self.location[0]
-        locY = self.location[1]
-        walls.append(self)
+        else:  # no path to food, return random move, TODO: chose move that lives longest, how?
+            # temp solution wiggle away from food
+            return (
+                self.wiggle_away()
+            )  # safe_move() # rand.choice([[1, 0], [-1, 0], [0, 1], [0, -1]])
 
-        # Takes wall rotation into account. If you want to rotate a placed wall,
-        # hold 'r' when you click
-        rotation = False
-        self.rotation = rotation
-        held_key = pygame.key.get_pressed()
-        if held_key[pygame.K_r]:
-            self.rotation = not rotation
-
-        if self.rotation == False:
-            self.rect = pygame.rect.Rect(locX - 25, locY, 50, 10)
-            node = Node((locX - 50, locY + 5), True)
-            node = Node((locX, locY + 5), True)
-            node = Node((locX + 50, locY + 5), True)
+    def check4food(self, loc):
+        if self.food[0] == loc[0] and self.food[1] == loc[1]:
+            return True
         else:
-            self.rect = pygame.rect.Rect(locX, locY - 25, 10, 50)
-            node = Node((locX - 5, locY - 50), True)
-            node = Node((locX - 5, locY), True)
-            node = Node((locX - 5, locY + 50), True)
+            return False
 
-    def draw(self, surface):
-        pygame.draw.rect(screen, (100, 100, 100), self.rect)
+    def empty_spaces(self):
+        return [
+            [i, j]
+            for i in range(self.height)
+            for j in range(self.width)
+            if self.board[i, j] == 0 or self.board[i, j] == -1
+        ]
+
+    def heuristic(self, head):
+        # distance to food
+        d0 = self.food[0] - head[0]
+        d1 = self.food[1] - head[1]
+        return np.sqrt(d0 ** 2 + d1 ** 2)
+
+    def astar_explore(self, temp_head):
+        self.explored.append(temp_head)
+
+        moves = self.get_safe_moves(temp_head)
+
+        for move in moves:
+            head = temp_head.copy()
+            head[0] += move[0]
+            head[1] += move[1]
+            h = self.heuristic(head)
+
+            if str(head) not in self.parents.keys():
+                self.parents[str(head)] = temp_head
+
+            if head in self.explored:
+                continue
+
+            if self.check4food(head):
+                self.food_found = True
+                return
+            if [h, head] not in self.not_explored:
+                self.not_explored.insert(0, [h, head])
+                self.not_explored.sort()
+
+    def astar1move(self):
+        temp_head = self.head.copy()
+        moves = self.get_safe_moves(temp_head)
+        if moves == []:  # no safe moves
+            return [1, 0]
+
+        min_h = 50000
+        for move in moves:
+            head = temp_head.copy()
+            head[0] += move[0]
+            head[1] += move[1]
+            h = self.heuristic(head)
+
+            if self.check4food(head):
+                return move
+            elif h < min_h:
+                min_h = h
+                best_move = move
+
+        return best_move
+
+    def astar_search(self, temp_head=None):
+        self.food_found = False
+        self.not_explored = []
+        self.explored = []
+        self.parents = dict()
+        if temp_head == None:
+            temp_head = self.head.copy()
+        orig_head = temp_head.copy()
+
+        moves = self.get_safe_moves(temp_head)
+
+        for move in moves:
+            head = temp_head.copy()
+            head[0] += move[0]
+            head[1] += move[1]
+            h = self.heuristic(head)
+            if str(head) not in self.parents.keys():
+                self.parents[str(head)] = temp_head
+            if self.check4food(head):
+                return move
+            else:
+                self.not_explored.insert(0, [h, head])
+                self.not_explored.sort()
+
+        while len(self.not_explored) > 0:
+            h_th = self.not_explored.pop(0)
+            self.astar_explore(h_th[1])
+            if self.food_found:
+                break
+
+        if self.food_found:  # back track to move
+            loc = self.food
+            while self.parents[str(loc)] != orig_head:
+                loc = self.parents[str(loc)]
+            return [loc[0] - orig_head[0], loc[1] - orig_head[1]]
+        elif len(self.explored) > 0:
+            loc = self.explored[-1]  # last point
+            while self.parents[str(loc)] != orig_head:
+                loc = self.parents[str(loc)]
+            return [loc[0] - orig_head[0], loc[1] - orig_head[1]]
+        else:  # no path to food, no path to far point
+            return (
+                self.wiggle_away()
+            )  # safe_move() # rand.choice([[1, 0], [-1, 0], [0, 1], [0, -1]])
+
+    def run_game(self, player_ai=None):
+        update_rate = 1
+        fps = 60
+        counter = 0
+        vel = self.vel
+        pygame.init()
+        myfont = pygame.font.SysFont("monospace", 65)
+        self.draw_board()
+        pygame.display.update()
+
+        exit_flag = False
+        while exit_flag == False and self.game_state == True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    exit_flag = True
+
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_UP:
+                        vel = [-1, 0]
+                    elif event.key == pygame.K_DOWN:
+                        vel = [1, 0]
+                    elif event.key == pygame.K_LEFT:
+                        vel = [0, -1]
+                    elif event.key == pygame.K_RIGHT:
+                        vel = [0, 1]
+                    else:
+                        vel = self.vel
+
+            time.sleep(1.0 / fps)
+            counter += 1
+            if counter >= update_rate:
+                if player_ai != None:
+                    vel = player_ai()
+                self.update_vel(vel)
+                self.update_state()
+                counter = 0
+            self.draw_board()
+            pygame.display.update()
+
+        label = myfont.render(f"Game Over!", 1, self.RED)
+        self.SCREEN.blit(label, (self.WIDTH + 10, 50))
+        pygame.display.update()
+
+        while exit_flag == False:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    exit_flag = True
+        pygame.quit()
 
 
-# This will draw the nodes in a grid, and store them into a list
-class Node(object):
-    def __init__(self, location, wall):
-        self.location = location
-        self.X = self.location[0]
-        self.Y = self.location[1]
-        self.rect = pygame.rect.Rect(self.X, self.Y, 5, 5)
+def main():
+    my_game = SnakeGameAStar()
 
-        # if the node has been visited
-        self.activated = False
-        if wall:
-            self.wall = True
-        else:
-            self.wall = False
-
-        # Add to the nodes list
-        nodes.append(self)
-
-    # Do not use unless you want to bog down the program
-    def draw(self, surface):
-        for node in nodes:
-            pygame.draw.circle(screen, (0, 200, 0), (self.location), 5)
-
-    def get_heuristic(self):
-        # Stores the location of the player
-        # useful for the straight line heuristic
-        player_location = player.getLocation()
-        # Splits the location into its X and Y coordinates
-        playerX = player_location[0]
-        playerY = player_location[1]
-
-        # heuristic or straight line distance to the player
-        self.H = math.hypot(playerX - self.X, playerY - self.Y)
-        # Used for debug/testing
-        # print("Heuristic Distance: {}").format(self.H)
-        return self.H
-
-    def is_wall(self):
-
-        self.check_area_x = (self.X - 16, self.X + 16)
-        self.check_area_y = (self.Y - 16, self.Y + 16)
-
-        # For each wall, we want to check if node is in the walls area,
-        # if it is, activate it so that we can see it, but
-        # mark it as a wall, so we know to avoid it.
-        for wall in walls:
-            # Getting location and size of wall
-            wall_size = wall.rect.size
-            wall_location = wall.location
-            # These point to the middle
-            wallX = wall_location[0]
-            wallY = wall_location[1]
-
-            if self.activated:
-                if wallX >= self.check_area_x[0] and wallX <= self.check_area_x[1]:
-                    if wallY >= self.check_area_y[0] and wallY <= self.check_area_y[1]:
-                        self.wall = True
-                if self.rect.colliderect(wall):
-                    self.wall = True
-
-            # print("Wall coordinates: {}, {}").format(wallX, wallY)
-            # print("The wall is size: {}\nThe wall is located at: {}").format(wall_size, wall_location)
+    my_game.run_game(my_game.astar_search)
 
 
-# The grid will be beneficial for pathfinding
-class Grid(object):
-    def __init__(self):
-        self.screen = SCREEN_SIZE
-        self.screenX = self.screen[0]
-        self.screenY = self.screen[1]
-
-    def place_nodes(self):
-        for y in range(self.screenY // GRID_MULT):
-            for x in range(self.screenX // GRID_MULT):
-                # print("Placeing node at ({}, {})").format(x*10, y*10)
-                location = (x * GRID_MULT, y * GRID_MULT)
-                node = Node(location, False)
-
-
-# Game Loop Variables
-# Creates a display screen at the static size created above
-screen = pygame.display.set_mode(SCREEN_SIZE)
-
-# Sets the title of the screen
-pygame.display.set_caption("Complex AI")
-
-# creates the objects and the control switch of the game loop
-player = Player()
-grid = Grid()
-nodes = []
-grid.place_nodes()
-follower = Follower()
-
-walls = []
-running = True
-
-clock = pygame.time.Clock()
-
-# print("Total number of nodes is {}").format(len(nodes))
-print("To start follower AI, hold down 'Q'")
-
-# Game Loop
-while running:
-    # Gives the screen the static color listed (R, G, B)
-    screen.fill(BACKGROUND_COLOR)
-
-    # Get events. Pygame has certain events that it can detect, in this case
-    # the event is the QUIT event (when you close the program)
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-            pygame.quit()
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            Wall()
-
-    # Draw the player to the screen and detect keystrokes
-    player.draw(screen)
-    player.handle_keys()
-
-    # draw the follower to the screen and activate logic
-    follower.draw(screen)
-
-    key = pygame.key.get_pressed()
-    if key[pygame.K_q]:
-        follower.artificial_intelligence()
-
-        # check which nodes are active
-        follower.which_nodes()
-
-        for node in nodes:
-            if node.activated:
-                node.is_wall()
-                # node.draw(screen)
-                node.get_heuristic()
-
-    # draw the wall
-    for wall in walls:
-        wall.draw(screen)
-
-    # flip, or update the display
-    pygame.display.update()
-
-    clock.tick(70)
+if __name__ == "__main__":
+    main()
