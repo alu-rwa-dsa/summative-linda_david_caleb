@@ -49,6 +49,9 @@ Applications
  ![](images/final_60808870269b4c00937f3937_296626.gif)
  
  
+ In order to run this application you must install NumPy
+                   *pip install numpy
+ 
 Bibliography
 
 GreatLearning Blog: Free Resources what Matters to shape your Career!. 2021. Best First Search Algorithm in AI | Concept, Algorithm and Implementation. [online] Available at: <https://www.mygreatlearning.com/blog/best-first-search-bfs/> [Accessed 7 April 2021].
