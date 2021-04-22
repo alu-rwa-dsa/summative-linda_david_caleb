@@ -49,8 +49,9 @@ Applications
  ![](images/final_60808870269b4c00937f3937_296626.gif)
  
  
- In order to run this application you must install NumPy
-                   *pip install numpy
+ In order to run this application you must install NumPy:
+ 
+                  pip install numpy
  
 Bibliography
 
