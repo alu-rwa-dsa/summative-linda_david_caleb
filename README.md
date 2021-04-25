@@ -82,6 +82,19 @@ As already said, A* algorithm takes advantage of the two data structures where i
  
                   pip install numpy
  
+ Correctness of our algorithm
+ 
+ A* algorithm is modeled by combining the Dijkstra and Best First Search algorithm. So why would this be more efficient than using either? Well, Dijkstra’s algorithm works by visiting vertices in the graph starting with the object’s starting point. It then repeatedly examines the closest not-yet-examined vertex, adding its vertices to the set of vertices to be examined. It expands outwards from the starting point until it reaches the goal. Dijkstra’s Algorithm is guaranteed to find a shortest path from the starting point to the goal, as long as none of the edges have a negative cost. Best FIrst Search on the other hand, works similarly to Dijstra, but instead of selecting the vertex closest to the starting point, it selects the one closest to the goal.
+It has an absolute estimate(heuristic) of how far from the goal the vertex is. This helps it run much faster towards the goal since the heuristic function guides its way towards the goal, but the trade off is that it may use the longer route, especially when there are obstacles on our path. Dijkstra will work harder(time consuming) but find the shortest path. 
+A* pathfinding, g(n) represents the exact cost of the path from the starting point to any vertex n, and h(n) represents the heuristic estimated cost from vertex n to the goal. 
+
+Equation: f(n) = g(n)+h(n)
+
+Each time through the main loop it examines  which path has the lowest f(n). 
+
+ To test correctness, we would observe that in a flat surface, our equation will use the Best First Search algorithm since it’s faster, and in that case our g(n) would be 0; however, once obstacles are introduced on our paths, it will utilize our Dijkistra’s g(n) since it will guarantee a shorter path albeit more time taken.
+                
+ 
 Bibliography
 
 GreatLearning Blog: Free Resources what Matters to shape your Career!. 2021. Best First Search Algorithm in AI | Concept, Algorithm and Implementation. [online] Available at: <https://www.mygreatlearning.com/blog/best-first-search-bfs/> [Accessed 7 April 2021].
