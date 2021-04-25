@@ -49,6 +49,35 @@ Applications
  ![](images/final_60808870269b4c00937f3937_296626.gif)
  
  
+ 
+ Analysis of Algorithm 
+
+A* algorithm is a blend of two data structures : Best-first search(informed search) and Djistra’s algorithm.
+
+Context
+
+Best-first search:
+
+The Greedy Best-First-Search algorithm works in a way that it has some estimate (called a heuristic) of how far from the goal any vertex is. Instead of selecting the vertex closest to the starting point, it selects the vertex closest to the goal. Greedy Best-First-Search is not guaranteed to find a shortest path. However, it runs much quicker than Dijkstra’s Algorithm because it uses the heuristic function to guide its way towards the goal very quickly. For example, if the goal is to the south of the starting position, Greedy Best-First-Search will tend to focus on paths that lead southwards rather than considering the whole grid( suppose it’s a 2D plane) which would take much more time as discussed above.
+
+Time complexity: Worst time complexity is O(n * Log n) where n is number of nodes.
+
+Space Complexity: O(b^m),  where b is the branching factor and m the number of nodes,this space complexity is due to the fact that we need to store the heuristic function evaluations for all nodes during the traversal.
+
+
+Dijkstra’s algorithm:
+
+Dijkstra’s Algorithm works by visiting vertices/nodes in the graph starting with the object’s starting point (node). It then repeatedly examines the closest not-yet-examined vertex, adding its vertices to the set of vertices to be examined. It expands outwards from the starting point until it reaches the goal. Dijkstra’s Algorithm is guaranteed to find a shortest path from the starting point to the goal, as long as none of the edges have a negative cost.
+
+Time Complexity: the worst case for the Dijkstra’s Algorithm time complexity is O(s*|E|log|E|+|n|), s being the number of sources, n the number of vertices in the graph, E the number of edges in the graph
+
+Space Complexity: the worst case for the Dijkstra’s Algorithm space complexity is O(n2), here n is the the number of nodes
+
+
+
+As already said, A* algorithm takes advantage of the two data structures where it can find the shortest path as Dijkstra’s and also uses heuristic to guide itself, this makes this algorithm more powerful than both of the above mentioned.
+
+
  In order to run this application you must install NumPy:
  
                   pip install numpy
