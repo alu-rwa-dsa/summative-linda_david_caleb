@@ -93,7 +93,11 @@ Equation: f(n) = g(n)+h(n)
 Each time through the main loop it examines  which path has the lowest f(n). 
 
  To test correctness, we would observe that in a flat surface, our equation will use the Best First Search algorithm since it’s faster, and in that case our g(n) would be 0; however, once obstacles are introduced on our paths, it will utilize our Dijkistra’s g(n) since it will guarantee a shorter path albeit more time taken.
-                
+ 
+Solution - how community will be benefited from your apps
+Our project is a snake game which will greatly help the community in relaxation as the study shows that Simple games can improve players' moods, promote relaxation and ward off anxiety, the study also say that If playing games simply makes people happier, this seems to be a fundamental emotional benefit to consider.
+
+Last but not least, Our snake game can also help in terms of improving someone’s focus which can be used in pre schools and primary schools to improve young kids focus while they concentrate on winning, it can also help kids/adults to be problem solvers because this game make the player try to find a solution (which is the snake finding food in this case), this is a good mind set for anyone to have.                
  
 Bibliography
 
