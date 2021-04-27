@@ -78,10 +78,6 @@ Space Complexity: the worst case for the Dijkstra’s Algorithm space complexity
 As already said, A* algorithm takes advantage of the two data structures where it can find the shortest path as Dijkstra’s and also uses heuristic to guide itself, this makes this algorithm more powerful than both of the above mentioned.
 
 
- In order to run this application you must install NumPy:
- 
-                  pip install numpy
- 
  Correctness of our algorithm
  
  A* algorithm is modeled by combining the Dijkstra and Best First Search algorithm. So why would this be more efficient than using either? Well, Dijkstra’s algorithm works by visiting vertices in the graph starting with the object’s starting point. It then repeatedly examines the closest not-yet-examined vertex, adding its vertices to the set of vertices to be examined. It expands outwards from the starting point until it reaches the goal. Dijkstra’s Algorithm is guaranteed to find a shortest path from the starting point to the goal, as long as none of the edges have a negative cost. Best FIrst Search on the other hand, works similarly to Dijstra, but instead of selecting the vertex closest to the starting point, it selects the one closest to the goal.
@@ -97,7 +93,15 @@ Each time through the main loop it examines  which path has the lowest f(n).
 Solution - how community will be benefited from your apps
 Our project is a snake game which will greatly help the community in relaxation as the study shows that Simple games can improve players' moods, promote relaxation and ward off anxiety, the study also say that If playing games simply makes people happier, this seems to be a fundamental emotional benefit to consider.
 
-Last but not least, Our snake game can also help in terms of improving someone’s focus which can be used in pre schools and primary schools to improve young kids focus while they concentrate on winning, it can also help kids/adults to be problem solvers because this game make the player try to find a solution (which is the snake finding food in this case), this is a good mind set for anyone to have.                
+Last but not least, Our snake game can also help in terms of improving someone’s focus which can be used in pre schools and primary schools to improve young kids focus while they concentrate on winning, it can also help kids/adults to be problem solvers because this game make the player try to find a solution (which is the snake finding food in this case), this is a good mind set for anyone to have.              
+
+
+Group video : https://drive.google.com/file/d/1ZjvxiVPqkQhS4Ze48CxUtEboXE0kFcv7/view?usp=sharing
+ 
+
+ In order to run this application you must install NumPy:
+ 
+                  pip install numpy
  
 Bibliography
 
