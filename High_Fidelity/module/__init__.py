@@ -351,11 +351,8 @@ class SnakeGameAStar(SnakeGameAI):
                 loc = self.parents[str(loc)]
             return [loc[0] - orig_head[0], loc[1] - orig_head[1]]
 
-        else:  # no path to food, return random move, TODO: chose move that lives longest, how?
-            # temp solution wiggle away from food
-            return (
-                self.wiggle_away()
-            )  # safe_move() # rand.choice([[1, 0], [-1, 0], [0, 1], [0, -1]])
+        else:
+            return self.wiggle_away()
 
     def check4food(self, loc):
         if self.food[0] == loc[0] and self.food[1] == loc[1]:

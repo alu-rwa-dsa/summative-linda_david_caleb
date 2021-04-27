@@ -97,7 +97,7 @@ class SnakeGameGUI(SnakeGame):
             pygame.display.update()
 
         label = myfont.render(f"Game Over!", 1, self.RED)
-        self.SCREEN.blit(label, (180, 230))
+        self.SCREEN.blit(label, (80, 230))
         pygame.display.update()
 
         while exit_flag == False:
